@@ -1,0 +1,11 @@
+{
+  "name": "@mediassist/widget",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "node --check src/index.js",
+    "lint": "node --check src/index.js"
+  },
+  "devDependencies": { "esbuild": "^0.25.0" }
+}

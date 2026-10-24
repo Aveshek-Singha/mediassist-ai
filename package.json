@@ -1,0 +1,25 @@
+{
+  "name": "mediassist-ai",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mediassist/widget build && concurrently -k -n mock,api,dashboard,demo -c yellow,cyan,green,magenta \"pnpm --filter @mediassist/mock-medibook dev\" \"pnpm --filter @mediassist/server dev\" \"pnpm --filter @mediassist/client dev\" \"pnpm --filter @mediassist/demo dev\"",
+    "build": "pnpm --filter @mediassist/mock-medibook build && pnpm --filter @mediassist/server build && pnpm --filter @mediassist/widget build && pnpm --filter @mediassist/client build && pnpm --filter @mediassist/demo build",
+    "typecheck": "pnpm --filter @mediassist/mock-medibook typecheck && pnpm --filter @mediassist/server typecheck && pnpm --filter @mediassist/widget typecheck && pnpm --filter @mediassist/client typecheck",
+    "lint": "eslint .",
+    "test:unit": "pnpm --filter @mediassist/server exec tsx --test src/lib/core.test.ts src/db/store.test.ts",
+    "test:integration": "node scripts/integration-smoke.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.72.0"
+  }
+}

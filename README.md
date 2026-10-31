@@ -1,8 +1,19 @@
 # MediAssist AI
 
-MediAssist is a single-clinic integrations application with an Express API, React admin dashboard, embeddable booking widget, and MediBook-compatible mock. The backend includes a redacting SOAP draft workflow, event automations, signed webhook retries, and correlated operational logs.
+MediAssist AI is a single-clinic operations and integrations workspace. It connects a patient-facing booking widget and React admin dashboard through an Express API, with workflows for appointments, SOAP note drafts, event automations, and signed webhook delivery. A MediBook-compatible mock and deterministic local LLM provider make the end-to-end demo runnable without Docker, a database, or third-party API credentials.
 
-> This repository is a software project, not a clinical service or compliance certification. PHI redaction is best-effort, generated notes require clinician review, and this code must not receive real patient information until the organization has completed its security, privacy, legal, provider-contract, and operational reviews.
+The deployment boundary is one clinic per installation; multi-tenant SaaS isolation is not implemented.
+
+> **Safety note:** This repository is software, not a clinical service or compliance certification. Redaction is best-effort and generated notes require clinician review. Do not use real patient data until security, privacy, legal, provider-contract, and operational reviews are complete.
+
+## Product capabilities
+
+- **Patient booking:** an embeddable widget lets patients browse available slots and submit bookings. The browser calls MediAssist’s public API; the MediBook service credential stays on the server.
+- **Staff operations:** the React dashboard supports booking and visit-note workflows. Administrators manage team access, widget keys, prompts, automations, webhooks, and operational logs.
+- **AI-assisted visit notes:** sample text is redacted on a best-effort basis before a structured SOAP draft is generated. The local deterministic provider requires no API key; a clinician must review every draft.
+- **Event automations:** signed event receipts and idempotency checks prevent duplicate processing, while sensitive fields are excluded from automation inputs.
+- **Resilient webhook delivery:** durable leases, signed HTTPS requests, retries, replay controls, DNS validation, and correlation IDs make failures visible and recoverable.
+- **Runnable integration boundary:** the included MediBook-compatible mock lets the booking flow run locally without a real clinic system or provider credentials.
 
 ## Run locally without Docker
 
@@ -16,12 +27,12 @@ pnpm dev
 
 The default uses local file storage and the in-memory MediBook mock. It does not need PostgreSQL, MongoDB, or an LLM key.
 
-| Service | Address |
-|---|---|
-| Admin dashboard | http://localhost:5173 |
-| Separate-origin widget demo | http://localhost:5174 |
-| API and OpenAPI page | http://localhost:4000/docs |
-| MediBook mock | http://localhost:4100/health |
+| Surface | Local address | Purpose |
+|---|---|---|
+| Admin dashboard | `http://localhost:5173` | Clinic staff booking, notes, automations, and operations |
+| Widget demo | `http://localhost:5174` | Patient booking flow on a separate origin |
+| API and OpenAPI page | `http://localhost:4000/docs` | MediAssist REST API and interactive API description |
+| MediBook mock | `http://localhost:4100/health` | Local booking service used by the integration demo |
 
 Demo sign-in is `admin@mediassist.local` / `change-this-demo-password`. The local widget key is `pk_test_mediassist` and only allows the local dashboard and demo origins. The mock resets its appointments when restarted. Local state and logs are stored in `server/.data/` and ignored by Git.
 
@@ -45,6 +56,34 @@ flowchart LR
   API --> Queue[Leased webhook queue]
   Queue -->|signed HTTPS POST| Receiver[Clinic webhook]
 ```
+
+## Repository structure and stack
+
+| Path | Responsibility |
+|---|---|
+| `client/` | React 18 and Vite staff dashboard |
+| `widget/` | Embeddable JavaScript booking widget, bundled with esbuild |
+| `server/` | TypeScript and Express API, auth, domain workflows, storage, and integrations |
+| `mock-medibook/` | Express mock for the MediBook contract in `docs/A-contract.md` |
+| `demo/` | Vite patient-facing widget demo |
+| `scripts/` | HTTP integration smoke test |
+| `docs/` | Architecture decisions and service contract |
+
+| Layer | Technology |
+|---|---|
+| Runtime and package management | Node.js 22 or 24, pnpm 11 workspaces |
+| API | TypeScript, Express 4, Zod, JWT, Pino |
+| Dashboard | React 18, Vite 6, Lucide |
+| Persistence | PostgreSQL and MongoDB in production; atomic files and JSONL logs locally |
+| Integrations | MediBook-compatible API, configurable LLM provider, signed webhook delivery |
+
+## Engineering highlights
+
+- PostgreSQL migrations and shared rate-limit counters support multi-replica operation; production fails closed when required stores are unavailable.
+- Webhook workers claim deliveries with expiring database leases so concurrent API replicas do not process the same delivery at once.
+- Outbound webhook targets are restricted to public addresses, pinned to a validated DNS result, and never followed through redirects.
+- Production admin access requires TOTP MFA; browser sessions use short-lived HttpOnly, Secure cookies with origin checks for state-changing requests.
+- Raw note storage is disabled in production. Logs omit note text, bearer tokens, and secrets; generated drafts remain subject to clinician review.
 
 ## Backend design and production configuration
 
